@@ -1,7 +1,10 @@
 const jwt = require('jsonwebtoken')
+const axios = require("axios");
 
-module.exports = function (roles) {
-    return function (req, res, next) {
+const DB_SERVICE_URL = "http://localhost:5001" || process.env.DB_SERVICE_URL;
+
+module.exports = function (role) {
+    return async function (req, res, next) {
         if (req.method === "OPTIONS") {
             next();
         }
@@ -9,21 +12,22 @@ module.exports = function (roles) {
         try {
             const Token = req.cookies['Authorization'].split(' ')[1];
             if (!Token) {
-                return res.status(403).json({message: "Вы не авторизованы"})
+                return res.status(400).json({message: "You are not authorized"})
             }
-            const userRoles = jwt.verify(Token,process.env.JWT_SECRET);
-            var HasRole = false;
-            if (userRoles.roles == roles) {
-                HasRole = true;
+            const userData = jwt.verify(Token,process.env.JWT_SECRET);
+            const user = await axios.post(DB_SERVICE_URL + '/find', { "data": { id: userData.id }, "table": "users" });
+            var hasRole = false;
+            if (user.data.record.role == role) {
+                hasRole = true;
             }
-            if (!HasRole) {
-                return res.status(403).json({message: "У вас нет доступа"})
+            if (!hasRole) {
+                return res.status(400).json({message: "You don't have access"})
             }
             next();
         } 
         catch (error) {
             console.error(error);
-            return res.status(403).json({message: "Вы не авторизованы"})
+            return res.status(400).json({message: "You are not authorized"})
         }
     }
 };

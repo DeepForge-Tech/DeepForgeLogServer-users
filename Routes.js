@@ -1,11 +1,11 @@
 // Импортирование необходимых библиотек
 const express = require('express');
 const path = require('path');
+const jwt = require("jsonwebtoken");
 const cookieParser = require('cookie-parser');
-// const colors = require('colors');
-const jwt = require('jsonwebtoken');
 const AuthMiddleware = require('./middleware/AuthMiddleware');
 const RoleMiddleware = require('./middleware/RoleMiddleware');
+const CacheMiddleware = require('./middleware/CacheMiddleware');
 const session = require('express-session');
 const Controller = require('./controller/AuthController');
 const { check } = require("express-validator");
@@ -54,17 +54,12 @@ app.use(express.static(__dirname + '/static'));
 app.post('/signup', [
     check('username', "Имя пользователя не может быть пустым").notEmpty(),
     check('password', "Пароль должен быть больше 8 символов").isLength({ min: 8 })
-], urlencodedParser, Controller.SignUp);
-app.post('/login', urlencodedParser, Controller.SignIn);
-app.get("/logout", urlencodedParser, AuthMiddleware, Controller.Logout);
-app.get("/check_auth_cookie", async (req, res) => {
-    if (req.cookies["Authorization"]) {
-        res.status(200).json({message:"OK"});
-    }
-    else {
-        res.status(400).json({message:"Not Found"});
-    }
-});
+], urlencodedParser, Controller.signUp);
+app.post('/login', urlencodedParser, Controller.signIn);
+app.get("/logout", urlencodedParser, AuthMiddleware, Controller.logout);
+app.get("/check_auth_cookie",urlencodedParser,CacheMiddleware, Controller.checkAuthCookie);
+app.get("/find_all_users",urlencodedParser,CacheMiddleware,AuthMiddleware,RoleMiddleware("Administrator"),Controller.findAllUsers);
+app.post("/create_user",urlencodedParser,AuthMiddleware,RoleMiddleware("Administrator"),Controller.createUser);
 // app.get('/dashboard/:model_name',RoleMiddleware("Admin"), async function(req,res) {
 //     var admin = await isAdmin(req,res);
 //     var model_name = req.params.model_name;
@@ -94,22 +89,7 @@ app.get("/check_auth_cookie", async (req, res) => {
 //         await res.redirect("/models/model_not_find")
 //     }
 // })
-
-// app.use( async (req, res, next) => {
-//     var admin = await isAdmin(req,res);
-//     res.status(404).render('404',{isAdmin: admin});
-// })
-// app.use( async (req, res, next) => {
-//     var admin = await isAdmin(req,res);
-//     res.status(403).render('403',{isAdmin: admin});
-// })
-// app.use( async (req, res, next) => {
-//     var admin = await isAdmin(req,res);
-//     res.status(500).render('500',{isAdmin: admin});
-// })
-// app.use( async (req, res, next) => {
-//     var admin = await isAdmin(req,res);
-//     res.status(502).render('502',{isAdmin: admin});
+// res.status(502).render('502',{isAdmin: admin});
 // })
 
 app.listen(PORT, () => console.log("Server listening on port " + PORT))
