@@ -9,7 +9,7 @@ const generateAccessToken = (id, roles) => {
     const payload = {
         id
     }
-    return jwt.sign(payload, process.env.JWT_SECRET, {expiresIn: "1h"} )
+    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" })
 }
 var TempToken = "";
 
@@ -22,22 +22,20 @@ class AuthController {
             // if (!errors.isEmpty()) {
             //     return res.status(400).json({message: "Ошибка при регистрации", errors})
             // }
-            const check_user = await axios.post(DB_SERVICE_URL + '/find', { "data": {username:username},"table":"users"});
-            if(check_user.data.answer == "exists")
-            {
-                return res.status(400).json({message: "Пользователь с таким именем уже существует"})
+            const check_user = await axios.post(DB_SERVICE_URL + '/find', { "data": { username: username }, "table": "users" });
+            if (check_user.data.answer == "exists") {
+                return res.status(400).json({ message: "A user with the same name already exists" })
             }
             const hashPassword = bcrypt.hashSync(password, 7);
-            const create_user = await axios.post(DB_SERVICE_URL + '/insert', { "data": {username:username,password:hashPassword},"table":"users"});
-            if (create_user.status == 200)
-            {
-                await res.redirect('/auth/signin');
+            const create_user = await axios.post(DB_SERVICE_URL + '/insert', { "data": { username: username, password: hashPassword }, "table": "users" });
+            if (create_user.status == 200) {
+                await res.status(200).json({ message: "Success" });
             }
             // return res.json({message: "Пользователь успешно зарегистрирован"})
-        } 
+        }
         catch (error) {
             console.log(error);
-            res.status(400).json({message: 'Произошла ошибка на сервере при отправке ответа'});
+            res.status(400).json({ message: 'An error occurred on the server while sending the response' });
         }
     }
 
@@ -45,32 +43,40 @@ class AuthController {
         try {
             const username = req.body["username"];
             const password = req.body["password"];
-            const check_user = await axios.post(DB_SERVICE_URL + '/find', { "data": {username:username},"table":"users"});
-            if(check_user.data.answer == "not exists")
-            {
-                return res.status(400).json({message: `Пользователь ${username} не найден`})
+            const check_user = await axios.post(DB_SERVICE_URL + '/find', { "data": { username: username }, "table": "users" });
+            if (check_user.data.answer == "not exists") {
+                return res.status(400).json({ message: "User " + username +" not found" })
             }
             const validPassword = bcrypt.compareSync(password, check_user.data.user.password);
             if (!validPassword) {
-                return res.status(400).json({message: `Введен неверный пароль`})
+                return res.status(400).json({ message: `Incorrect password entered` })
             }
             const token = generateAccessToken(check_user.data.user.id);
-            res.cookie('Authorization', "Bearer " + token);
             TempToken = "Bearer " + token;
-            await res.redirect('/')
-            // return res.json({token});
+            res.cookie('Authorization', TempToken);
+            
+            await res.status(200).json({ message: "OK",name_cookie:"Authorization",token: TempToken});
         } catch (error) {
             console.log(error);
-            res.status(400).json({message: 'Произошла ошибка на сервере при отправке ответа'});
+            res.status(400).json({ message: 'An error occurred on the server while sending the response' });
         }
     }
-    async Logout(req,res) {
+    async Logout(req, res) {
         try {
             await res.clearCookie("Authorization");
-            await res.redirect('/auth/signin');
+            res.status(200).json({ message: "OK" });
         }
-        catch(error) {
+        catch (error) {
             console.log(error);
+            res.status(400).json({ message: "User is not authorized" });
+        }
+    }
+    async CheckAuthCookie(req, res) {
+        if (req.cookies["Authorization"]) {
+            res.status(200).json({ message: "OK" });
+        }
+        else {
+            res.status(400).json({ message: "Not Found" });
         }
     }
 }
