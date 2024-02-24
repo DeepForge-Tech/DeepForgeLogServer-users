@@ -5,7 +5,6 @@ const jwt = require("jsonwebtoken");
 const cookieParser = require('cookie-parser');
 const AuthMiddleware = require('./middleware/AuthMiddleware');
 const RoleMiddleware = require('./middleware/RoleMiddleware');
-const CacheMiddleware = require('./middleware/CacheMiddleware');
 const session = require('express-session');
 const Controller = require('./controller/AuthController');
 const { check } = require("express-validator");
@@ -57,8 +56,8 @@ app.post('/signup', [
 ], urlencodedParser, Controller.signUp);
 app.post('/login', urlencodedParser, Controller.signIn);
 app.get("/logout", urlencodedParser, AuthMiddleware, Controller.logout);
-app.get("/check_auth_cookie",urlencodedParser,CacheMiddleware, Controller.checkAuthCookie);
-app.get("/find_all_users",urlencodedParser,CacheMiddleware,AuthMiddleware,RoleMiddleware("Administrator"),Controller.findAllUsers);
+app.get("/check_auth_cookie",urlencodedParser, Controller.checkAuthCookie);
+app.get("/find_all_users",urlencodedParser,AuthMiddleware,RoleMiddleware("Administrator"),Controller.findAllUsers);
 app.post("/create_user",urlencodedParser,AuthMiddleware,RoleMiddleware("Administrator"),Controller.createUser);
 // app.get('/dashboard/:model_name',RoleMiddleware("Admin"), async function(req,res) {
 //     var admin = await isAdmin(req,res);
@@ -92,5 +91,5 @@ app.post("/create_user",urlencodedParser,AuthMiddleware,RoleMiddleware("Administ
 // res.status(502).render('502',{isAdmin: admin});
 // })
 
-app.listen(PORT, () => console.log("Server listening on port " + PORT))
+app.listen(PORT, () => console.log("Users microservice listening on port " + PORT))
 module.exports = app;
